@@ -76,7 +76,11 @@ class JokeCompetition(commands.Cog):
             
         return target_time
 
-    @app_commands.command(name='startjoke', description='Start a new joke competition')
+    @app_commands.command(
+            name='startjoke', 
+            description='Start a new joke competition', 
+            default_permissions=discord.Permissions(manage_messages=True)
+            )
     @app_commands.describe(
         start_time='When to start the competition (e.g., "now", "5pm", "17:30")',
         end_time='When to end the competition (e.g., "6pm", "18:30", "2h")',

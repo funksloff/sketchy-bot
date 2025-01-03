@@ -86,7 +86,8 @@ class TimerCog(commands.Cog):
 
     @app_commands.command(
         name="timer", 
-        description="Start a timer for script reading"
+        description="Start a timer for script reading",
+        default_permissions=discord.Permissions(send_messages=True)
     )
     @app_commands.describe(
         minutes="Number of minutes to set the timer for",
