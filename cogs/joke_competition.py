@@ -442,10 +442,15 @@ class JokeCompetition(commands.Cog):
                     # If the winning submission had an image, post it
                     if submission_data.get('has_image') and submission_data.get('files'):
                         try:
-                            await original_channel.send(
-                                f"### {medals[i]} Winner's submission image:",
-                                files=submission_data['files']
-                            )
+                            # Get the original message
+                            original_msg = await thread.fetch_message(entry['message'].id)
+                            if original_msg.attachments:
+                                # Refetch the files
+                                new_files = [await attachment.to_file() for attachment in original_msg.attachments]
+                                await original_channel.send(
+                                    f"### {medals[i]}",
+                                    files=new_files
+                                )
                         except Exception as e:
                             logger.error(f"Error sending winner image: {e}")
                     
