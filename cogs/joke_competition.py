@@ -423,7 +423,11 @@ class JokeCompetition(commands.Cog):
         
         vote_data.sort(key=lambda x: x['votes'], reverse=True)
 
-        medals = ["🥇", "🥈", "🥉"]
+        # First send the setup
+        await original_channel.send(f"**Setup:** {setup}")
+        
+        # Send winners header
+        await original_channel.send("## 🏆 **WINNERS** 🏆")
 
         if vote_data:
             logger.info("Processing winners...")
@@ -431,65 +435,40 @@ class JokeCompetition(commands.Cog):
                 if i < len(medals):
                     submission_data = self.submissions[thread_id][entry['submission_number']]
                     author = self.bot.get_user(submission_data['user_id'])
+                    
+                    # Prepare winner message
+                    winner_message = (
+                        f"### {medals[i]} **{entry['votes']} votes**\n"
+                        f"{submission_data['punchline']}\n"
+                        f"by {author.mention}"
+                    )
 
-                    # If the winning submission had an image, post it
-                    if submission_data.get('has_image') and submission_data.get('files'):
+                    # If the winning submission had an image, post it first
+                    if submission_data.get('has_image'):
                         try:
                             # Get the original message
                             original_msg = await thread.fetch_message(entry['message'].id)
                             if original_msg.attachments:
                                 # Refetch the files
                                 new_files = [await attachment.to_file() for attachment in original_msg.attachments]
-                                await original_channel.send(
-                                    f"### {medals[i]}",
-                                    files=new_files
-                                )
+                                await original_channel.send(f"{medals[i]}", files=new_files)
                         except Exception as e:
                             logger.error(f"Error sending winner image: {e}")
                     
+                    # Send the winner's text
+                    await original_channel.send(winner_message)
                     logger.info(f"Added winner: {entry['votes']} votes")
         else:
             logger.info("No vote data found")
-            winner_text += "### No votes were cast in this competition!\n\n"
+            await original_channel.send("### No votes were cast in this competition!\n\n")
 
-        # If there's an image, we want to keep the original message but update it
-        initial_message = self.active_competitions[thread_id]['initial_message']
-        if not self.active_competitions[thread_id].get('has_image'):
-            try:
-                await initial_message.delete()
-            except (discord.NotFound, discord.Forbidden) as e:
-                logger.warning(f"Couldn't delete message: {e}")
-                pass
-        
-        # Send thread message
-        await thread.send(f"{winner_text}Thanks everyone for participating!")
-        
-        # Send channel messages in order
-        footer_text = f"\n\nSee all submissions in the [joke thread]({thread.jump_url})\n\nThanks everyone for participating!"
-
-        # First send setup
-        await original_channel.send(f"**Setup:** {setup}")
-
-        # Then send winners header
-        await original_channel.send("## 🏆 **WINNERS** 🏆")
-
-        # Loop through winners again to send individual results
-        if vote_data:
-            for i, entry in enumerate(vote_data[:3]):
-                if i < len(medals):
-                    submission_data = self.submissions[thread_id][entry['submission_number']]
-                    author = self.bot.get_user(submission_data['user_id'])
-                    
-                    winner_message = (
-                        f"### {medals[i]} **{entry['votes']} votes**\n"
-                        f"{submission_data['punchline']}\n"
-                        f"by {author.mention}"
-                    )
-                    await original_channel.send(winner_message)
-
-        # Finally send footer
+        # Send footer
+        footer_text = f"\nSee all submissions in the [joke thread]({thread.jump_url})\n\nThanks everyone for participating!"
         await original_channel.send(footer_text)
         
+        # Send thread message
+        await thread.send("Thanks everyone for participating!")
+
         logger.info(f"Competition ended for thread {thread_id}")
         
         del self.active_competitions[thread_id]
