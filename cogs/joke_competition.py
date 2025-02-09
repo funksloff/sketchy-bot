@@ -443,7 +443,7 @@ class JokeCompetition(commands.Cog):
                     if submission_data.get('has_image') and submission_data.get('files'):
                         try:
                             await original_channel.send(
-                                f"### {medals[i]} Winner's submission image:",
+                                f"### {medals[i]}",
                                 files=submission_data['files']
                             )
                         except Exception as e:
