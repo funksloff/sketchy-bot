@@ -448,7 +448,7 @@ class JokeCompetition(commands.Cog):
                             original_msg = await thread.fetch_message(entry['message'].id)
                             if original_msg.attachments:
                                 new_files = [await attachment.to_file() for attachment in original_msg.attachments]
-                                await original_channel.send(f"{medals[i]}", files=new_files)
+                                await original_channel.send(files=new_files)
                         except Exception as e:
                             logger.error(f"Error sending winner image: {e}")
                     
