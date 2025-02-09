@@ -62,7 +62,7 @@ async def on_ready():
     # Set up a custom status showing slash command usage
     activity = discord.Activity(
         type=discord.ActivityType.listening,
-        name="for laughter | /startjoke"
+        name="laughter"
     )
     await bot.change_presence(activity=activity)
 
