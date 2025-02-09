@@ -466,8 +466,23 @@ class JokeCompetition(commands.Cog):
         footer_text = f"\nSee all submissions in the [joke thread]({thread.jump_url})\n\nThanks everyone for participating!"
         await original_channel.send(footer_text)
         
+        # Build winner text for thread
+        thread_winner_text = "## 🏆 **WINNERS** 🏆\n\n"
+        if vote_data:
+            for i, entry in enumerate(vote_data[:3]):
+                if i < len(medals):
+                    submission_data = self.submissions[thread_id][entry['submission_number']]
+                    author = self.bot.get_user(submission_data['user_id'])
+                    thread_winner_text += (
+                        f"### {medals[i]} **{entry['votes']} votes**\n"
+                        f"{submission_data['punchline']}\n"
+                        f"by {author.mention}\n\n"
+                    )
+        else:
+            thread_winner_text += "### No votes were cast in this competition!\n\n"
+
         # Send thread message
-        await thread.send("Thanks everyone for participating!")
+        await thread.send(f"{thread_winner_text}Thanks everyone for participating!")
 
         # Cleanup
         logger.info(f"Competition ended for thread {thread_id}")
