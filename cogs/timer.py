@@ -85,9 +85,8 @@ class TimerCog(commands.Cog):
                 logger.info(f"Timer cleaned up for channel {channel_id}")
 
     @app_commands.command(
-        name="timer", 
-        description="Start a timer for script reading"
-    )
+        name="timer", description="Start a timer for script reading")
+    @app_commands.default_permissions(send_messages=True)
     @app_commands.describe(
         minutes="Number of minutes to set the timer for",
         name="Name of the person whose script is being read"

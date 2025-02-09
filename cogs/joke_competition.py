@@ -77,6 +77,7 @@ class JokeCompetition(commands.Cog):
         return target_time
 
     @app_commands.command(name='startjoke', description='Start a new joke competition')
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.describe(
         start_time='When to start the competition (e.g., "now", "5pm", "17:30")',
         end_time='When to end the competition (e.g., "6pm", "18:30", "2h")',
@@ -188,9 +189,8 @@ class JokeCompetition(commands.Cog):
             )
 
     @app_commands.command(name='lookup', description='Look up who submitted a specific punchline number')
-    @app_commands.describe(
-        number='The punchline number to look up'
-    )
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.describe(number='The punchline number to look up')
     async def lookup(self, interaction: discord.Interaction, number: int):
         if not interaction.user.guild_permissions.manage_messages:
             await interaction.response.send_message(
@@ -249,9 +249,22 @@ class JokeCompetition(commands.Cog):
         # Process the submission
         submission_number = len(self.submissions[thread_id]) + 1
         
+        # Image handling
+        files = []
+        if message.attachments:
+            for attachment in message.attachments:
+                if attachment.content_type.startswith('image/'):
+                    files.append(await attachment.to_file())
+                else:
+                    await message.author.send("Only image attachments are allowed.")
+                    return
+
+        # Message and image storage                
         self.submissions[thread_id][submission_number] = {
             'punchline': message.content,
-            'user_id': message.author.id
+            'user_id': message.author.id,
+            'has_image': bool(files),
+            'files': files.copy() if files else None
         }
 
         # Delete the original message
@@ -262,14 +275,20 @@ class JokeCompetition(commands.Cog):
             pass
 
         # Post the anonymous submission
-        punchline_msg = await message.channel.send(f"**Punchline #{submission_number}:**\n{message.content}")
+        content = f"**Punchline #{submission_number}:**\n{message.content}"
+        if files:
+            punchline_msg = await message.channel.send(content=content, files=files)
+        else:
+            punchline_msg = await message.channel.send(content=content)
+        
         self.punchline_messages[thread_id].append({
             'message_id': punchline_msg.id,
             'submission_number': submission_number,
-            'punchline': message.content
+            'punchline': message.content,
+            'has_image': bool(files)
         })
         await punchline_msg.add_reaction("⭐")
-        logger.info(f"Received submission from {message.author.name} for thread {thread_id}")
+        logger.info(f"Recieved submission from {message.author.name} for thread {thread_id}")
         logger.info(f"Stored message ID {punchline_msg.id}")
 
     async def create_competition(self, interaction, setup, start_time, end_time, files=None):
@@ -419,6 +438,17 @@ class JokeCompetition(commands.Cog):
                         f"{submission_data['punchline']}\n"
                         f"by {author.mention}\n\n"
                     )
+
+                    # If the winning submission had an image, post it
+                    if submission_data.get('has_image') and submission_data.get('files'):
+                        try:
+                            await original_channel.send(
+                                f"### {medals[i]} Winner's submission image:",
+                                files=submission_data['files']
+                            )
+                        except Exception as e:
+                            logger.error(f"Error sending winner image: {e}")
+                    
                     logger.info(f"Added winner: {entry['votes']} votes")
         else:
             logger.info("No vote data found")
