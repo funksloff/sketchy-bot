@@ -399,6 +399,7 @@ class JokeCompetition(commands.Cog):
         logger.info("Starting vote count...")
 
         setup = self.active_competitions[thread_id]['setup_message']
+        medals = ["🥇", "🥈", "🥉"]
 
         vote_data = []
         for msg_data in self.punchline_messages[thread_id]:
@@ -423,12 +424,11 @@ class JokeCompetition(commands.Cog):
         
         vote_data.sort(key=lambda x: x['votes'], reverse=True)
 
-        # First send the setup
+        # Send initial announcements
         await original_channel.send(f"**Setup:** {setup}")
-        
-        # Send winners header
         await original_channel.send("## 🏆 **WINNERS** 🏆")
 
+        # Process winners
         if vote_data:
             logger.info("Processing winners...")
             for i, entry in enumerate(vote_data[:3]):
@@ -436,31 +436,31 @@ class JokeCompetition(commands.Cog):
                     submission_data = self.submissions[thread_id][entry['submission_number']]
                     author = self.bot.get_user(submission_data['user_id'])
                     
-                    # Prepare winner message
                     winner_message = (
                         f"### {medals[i]} **{entry['votes']} votes**\n"
                         f"{submission_data['punchline']}\n"
                         f"by {author.mention}"
                     )
 
-                    # If the winning submission had an image, post it first
+                    # Send winner announcement and image if present
                     if submission_data.get('has_image'):
                         try:
-                            # Get the original message
                             original_msg = await thread.fetch_message(entry['message'].id)
                             if original_msg.attachments:
-                                # Refetch the files
                                 new_files = [await attachment.to_file() for attachment in original_msg.attachments]
                                 await original_channel.send(f"{medals[i]}", files=new_files)
                         except Exception as e:
                             logger.error(f"Error sending winner image: {e}")
                     
-                    # Send the winner's text
-                    await original_channel.send(winner_message)
-                    logger.info(f"Added winner: {entry['votes']} votes")
+                    # Send winner's text
+                    try:
+                        await original_channel.send(winner_message)
+                        logger.info(f"Added winner: {entry['votes']} votes")
+                    except Exception as e:
+                        logger.error(f"Error sending winner message: {e}")
         else:
             logger.info("No vote data found")
-            await original_channel.send("### No votes were cast in this competition!\n\n")
+            await original_channel.send("### No votes were cast in this competition!")
 
         # Send footer
         footer_text = f"\nSee all submissions in the [joke thread]({thread.jump_url})\n\nThanks everyone for participating!"
@@ -469,12 +469,11 @@ class JokeCompetition(commands.Cog):
         # Send thread message
         await thread.send("Thanks everyone for participating!")
 
+        # Cleanup
         logger.info(f"Competition ended for thread {thread_id}")
-        
         del self.active_competitions[thread_id]
         del self.submissions[thread_id]
         del self.punchline_messages[thread_id]
-        pass
 
     @check_competitions.before_loop
     async def before_check_competitions(self):
