@@ -34,7 +34,7 @@ class TimerCog(commands.Cog):
             try:
                 discussion_channel = self.find_discussion_channel(channel.guild)
                 if not discussion_channel:
-                    await channel.send(content="Time is up, great job!", tts=True)
+                    await channel.send(content="Time!", tts=True)
                     await channel.send("Note: Couldn't find a #script-discussions channel to create the thread in. Please create one!")
                     return
 
@@ -54,7 +54,7 @@ class TimerCog(commands.Cog):
                     )
                     
                     # Send time's up message with thread link
-                    await channel.send(content="Time is up, great job!", tts=True)
+                    await channel.send(content="Time", tts=True)
                     await channel.send(
                         f"💡 Continue the discussion in the new thread: {thread.jump_url}\n"
                         f"Share any additional notes, joke pitches, and feedback there!"
